@@ -1,85 +1,113 @@
-# Dispmanx
+# RetroPie PS3 Battery Indicator
 
-There are a number of APIs available for the Raspberry Pi that can make use
-of the computers GPU. These include OpenMAX, Open GL ES(1 and 2) and OpenVG.
-The raspberrypi/firmware repository has short examples for these and other
-APIs. They can be found in /opt/vc/src/hello_pi/ on the Raspbian 'wheezy'
-image. Among these examples is a program called hello_dispmanx. It is a
-very small example of the Dispmanx windowing system. Apart from this:-
+Modified copy of files from the raspidmx library by AndrewFromMelbourne:
+https://github.com/AndrewFromMelbourne/raspidmx
 
-https://github.com/raspberrypi/firmware/tree/master/opt/vc/src/hello_pi/hello_dispmanx
+Primarily relies on a modified copy of the pngview utility from raspidmx. All other unnescessary files have been omitted.
 
-example, there is very little documentation available for this API. There
-are snippets of information on the Raspberry Pi forum, but I have not found
-a single place with detailed information on DispmanX.  Hopefully these
-programs can be used as a starting point for anyone wanting to make use of
-DispmanX.
+The battery indicator will be displayed whenever a wireless PS3 controller is connected (using sixad) to the Raspberry Pi. It will run in the background with Emulation Station open as well as when playing games, though the script can be disabled during gameplay if desired.
 
-The programs demonstrate layers with the following types: 4BPP (4 bit
-indexed), 8BPP (8 bit indexed), RGB565 (16 bit), RGB888 (24 bit), RGBA16
-(16 bit with transparency) and RGBA32 (32 bit with transparency)
+# How to use
+It's important to note that this has only been tested on a Raspberry Pi 3 and relies on the sixad utility for connecting with PS3 controllers. Also, you'll need to have libpng installed if you don't already have it:
+```
+$ sudo apt-get install libpng12-dev
+```
 
-## test_pattern
+## Step 1:
+Copy these files onto the pi, in a folder that you can remember. For example:
 
-This test pattern should be familiar to anyone who has used the Raspberry
-Pi. It is the same four colour square displayed when the Raspberry Pi boots.
+> /home/pi/RetroPie/customscripts/batteryCheck/
 
-## rgb_triangle
+The rest of the instructions assume you're using this folder. If not, just make sure to change each instance of the above folder path with your own.
 
-Displays a triangle in a layer with red, green and blue gradients starting
-at each corner respectively. Blends to grey in the center. Demonstrates
-changing size of source and destination rectangles.
+## Step 2:
+From the command line on the pi (or through ssh), cd to the folder you copied over:
+```
+$ cd /home/pi/RetroPie/customscripts/batteryCheck
+```
+## Step 3:
+Type 'make' to compile the code:
+```
+$ make
+```
+This will create the executable file that handles the graphical display. The file (called batDisplay, located in the code folder) draws the battery icon on the screen and then ends. Another script (batCheck.py) is used to determine battery levels and trigger the batDisplay executable.
 
-## life
+## Step 4:
+To test that the code works properly, try:
+```
+$ ./code/batDisplay ./icons/bat3.png
+```
+Which (assuming no error messages show up in the terminal) should display a battery icon on the screen the pi is connected to.
 
-Conway's game of life. Demonstrates double buffering.
+## Step 5:
+To get the battery display to work with PS3 controllers, the batCheck.py python script needs to be setup to run on startup.
+A simple way to handle this is to use the autostart.sh script, found here:
 
-## worms
+> /opt/retropie/configs/all/autostart.sh
 
-The program raspiworms uses a single 16 or 32 bit RGBA layer to display a
-number of coloured worms on the screen of the Raspberry Pi.
+Open this file and add the following lines of code above the emulationstation entry:
+```
+# Start PS3 controller battery check script
+python /home/pi/RetroPie/customscripts/batteryCheck/batCheck.py &
+```
 
-## pngview
+That's it! Reboot the pi and the battery check script should be working.
+The battery indicator will appear when you first connect a controller.
 
-Load a png image file and display it as a Dispmanx layer.
 
-## spriteview
+# Optional (disable during gameplay):
+The python script repeatedly monitors the sixad log file to check if new controllers have been connected.
+From my testing, the script doesn't seem to have any noticable impact on gameplay.
+However, just to be sure, it's possible to disable it during gameplay using the runcommand-onstart/runcommand-onend scripts.
 
-Loads a sprite (png) image file and displays it as an animation.
+To stop the script once a game is opened, navigate to:
+> /opt/retropie/configs/all/runcommand-onstart.sh
 
-## game
+And add the following code:
 
-Demonstrates a seamless background image that can be scolled in any
-direction. As well as animated sprites.
+```
+# Kill the battery checker script when entering games
+pkill -f batCheck.py
+```
 
-## mandelbrot
+To restart the script after exiting games, open the file:
+> /opt/retropie/configs/all/runcommand-onend.sh
 
-The famous (in the 1990s) Mandelbrot set.
+And add the following code:
 
-## radar_sweep
+```
+# Restart the PS3 controller battery check script
+python /home/pi/RetroPie/customscripts/batteryCheck/batCheck.py &
+```
 
-An animation of a 'radar sweep' using 16 bit (rgb) palette animation.
+Note that every time the battery check is restarted, it will re-report the battery levels. If you don't want this happening,
+go back to the autostart script (/opt/retropie/configs/all/autostart.sh) and add the following code above the line
+that calls the python script:
+```
+# Create an empty log file for battery check script
+> '/home/pi/RetroPie/customscripts/batteryCheck/batteryCheckLog.temp'
+```
 
-## radar_sweep_alpha
+This creates an empty log file on startup which the script will detect and use to store a list of controllers already checked.
+When the script is restarted it will use this list to make sure it doesn't re-report the existing controllers.
+(Though controllers connected/re-connected during a game will be displayed on exiting the game)
 
-An animation of a 'radar sweep' using 32 bit (rgba) palette animation.
 
-## offscreen
+# To uninstall:
+Delete the folder containing the files (/home/pi/RetroPie//home/pi/RetroPie/customscripts/batteryCheck)
+Then make sure to remove the extra lines added to the autostart.sh, runcommand-onstart.sh and runcommand-onend.sh scripts (located in /opt/retropie/configs/all/)
 
-An example of using an offscreen display to resize an image.
+# Customization
+### Battery Icons
+They're located in the icons folders, just replace them with whatever .png files you want.
 
-## common
-
-Code that may be common to some of the demonstration programs is in this
-folder.
-
-## building
-
-If you type make in the top level directory, the make file will build all
-the different programs in this repository. Each program has its own make
-file, so you can build them individually if you wish.
-
-You will need to install libpng before you build the program. On Raspbian
-
-sudo apt-get install libpng12-dev
-
+### Indicator Location/Timing/Speed
+Open the batCheck.py script and look for the line with a variable called 
+```
+dispCmdOptions = ''
+```
+Try changing this to something like:
+```
+dispCmdOptions = '-x 0 -y 0 -s 1000 -t 6'
+```
+This will cause the icon to instantly appear (instead of sliding in, due to the large -s value) in the top left corner of the screen, and stay on screen for 6 seconds (the -t option). The full list of options can be found in code folder ReadMe.
