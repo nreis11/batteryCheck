@@ -9,7 +9,7 @@ logPath='/var/log/sixad'
 
 # Specify battery check display file path
 dispExecPath='./code/batDisplay'
-dispCmdOptions = '' # Example: '-x 32 -y 32 -s 32 -t 3'
+dispCmdOptions = '-x 24 -y 16 -t 5' # Can change '-x 32 -y 32 -s 32 -t 3'
 
 # Get current directory. Icons and check log are stored relative to this python file
 currentDirectory = os.path.dirname(os.path.realpath(sys.argv[0]))
