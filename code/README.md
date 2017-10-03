@@ -7,5 +7,5 @@ batDisplay [-d <number>] [-l <layer>] [-x <offset>] [-y <offset>] [-s <stepSize>
     -x - offset (pixels from the left)    (default: 32)
     -y - offset (pixels from the top)     (default: 32)
     -s - stepsize (pixels per update)     (default: 32)
-    -t - icon display time (seconds)      (default: 2)
-    ```
+    -t - icon display time (seconds)      (default: 3)
+```
