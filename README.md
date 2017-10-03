@@ -102,10 +102,7 @@ Then make sure to remove the extra lines added to the autostart.sh, runcommand-o
 They're located in the icons folders, just replace them with whatever .png files you want: you can use transparency and there aren't any restrictions on the image dimensions (at least, keep them smaller than the screen size). Just make sure to keep the same naming convention: bat0.png, bat1.png, .... bat4.png
 
 ### Indicator Location/Timing/Speed
-Open the batCheck.py script and look for the line with a variable called 
-```
-dispCmdOptions = ''
-```
+Open the batCheck.py script and look for the line with a variable called `dispCmdOptions`
 Try changing this to something like:
 ```
 dispCmdOptions = '-x 0 -y 0 -s 1000 -t 6'
