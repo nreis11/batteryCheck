@@ -21,6 +21,10 @@ iconPath = currentDirectory + "/icons/bat"
 # Debugging enable/disable
 __debug = False
 
+knownDevices = {
+    # "00214130952" : 3
+}
+
 
 def callDisplayFunc(batVal):
     dispCmd = (
@@ -46,50 +50,39 @@ def getIdAndVal(device):
     batteryFile = f"{DEVICE_PATH}/{device}/capacity"
     with open(batteryFile) as bf:
         # (25,50,75,100)
-        batStr = bf.readline()
+        batStr = bf.readline().strip()
         batVal = int(int(batStr) * 0.04) if batStr.isdigit() else 0
         deviceId = formatKey(device)
         return (deviceId, batVal)
 
 
-knownDevices = {
-    # "00214130952" : 3
-}
-# Init dict with device id as key, value as battery
-# Compare len of dict with len of deviceDir
-# If curr len > len dict, iterate through dir, if device not in dict, add and displayBat exec
-
-
 def main():
-    currDevices = getCurrDevices(DEVICE_PATH)
-    if __debug:
-        print("BEFORE:")
-        print(f"KNOWN DEVICES: {knownDevices}")
+    while True:
+        currDevices = getCurrDevices(DEVICE_PATH)
+        if __debug:
+            print(f"\nBEFORE: KNOWN DEVICES: {knownDevices}")
 
-    if len(currDevices) > len(knownDevices):
-        # Detected new controller
-        for d in currDevices:
-            deviceId, batVal = getIdAndVal(d)
-            if deviceId not in knownDevices:
+        if len(currDevices) > len(knownDevices):
+            # Detected new controller
+            for d in currDevices:
+                deviceId, batVal = getIdAndVal(d)
+                if deviceId not in knownDevices:
+                    knownDevices[deviceId] = batVal
+                    callDisplayFunc(batVal)
+        elif len(currDevices) < len(knownDevices):
+            # Controller disconnected
+            knownDevices.clear()
+            for d in currDevices:
+                deviceId, batVal = getIdAndVal(d)
                 knownDevices[deviceId] = batVal
-                callDisplayFunc(batVal)
-    # Or curr len < len dict, recreate device dict
-    elif len(currDevices) < len(knownDevices):
-        # Controller disconnected
-        knownDevices.clear()
-        for d in currDevices:
-            deviceId, batVal = getIdAndVal(d)
-            knownDevices[deviceId] = batVal
 
-    if __debug:
-        print("AFTER")
-        print(f"KNOWN DEVICES: {knownDevices}")
+        if __debug:
+            print(f"AFTER: KNOWN DEVICES: {knownDevices}")
 
-    # time.sleep(2)
+        time.sleep(2)
 
 
 if __name__ == "__main__":
     main()
 else:
     __debug = True
-    DEVICE_PATH = "./tmp"
