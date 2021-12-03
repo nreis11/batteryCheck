@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import re
 import time
@@ -7,57 +8,63 @@ import sys
 DEVICE_PATH = "/sys/class/power_supply"
 
 # Get current directory. Icons and check log are stored relative to this python file
-currentDirectory = os.path.dirname(os.path.realpath(sys.argv[0]))
+curr_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-dispExecPath = currentDirectory + "/code/batDisplay"
-dispCmdOptions = "-x 24 -y 16 -t 5"  # Can change '-x 32 -y 32 -s 32 -t 3'
+disp_exec_path = curr_dir + "/code/batDisplay"
+disp_cmd_options = "-x 24 -y 16 -t 5"  # Can change '-x 32 -y 32 -s 32 -t 3'
 
 # Path for logging battery checks. Logging will be enabled if this file exists
-batLog = currentDirectory + "/batteryCheckLog.temp"
-batLogEnable = 0
+bat_log = curr_dir + "/batteryCheckLog.temp"
+bat_log_enable = 0
 
 # Path for battery icons (including the 'bat' part of batX.png file name for convenience)
-iconPath = currentDirectory + "/icons/bat"
+icon_path = curr_dir + "/icons/bat"
 
 # Debugging enable/disable
 __debug = False
 
 # Connected devices
-knownDevices = {
+known_devices = {
     # "00214130952" : 3
 }
 
 
-def callDisplayFunc(batVal):
+def call_display_func(bat_val):
     """Use to call the battery display func."""
-    dispCmd = (
-        dispExecPath + " " + dispCmdOptions + " " + iconPath + str(batVal) + ".png"
+    disp_cmd = (
+        disp_exec_path
+        + " "
+        + disp_cmd_options
+        + " "
+        + icon_path
+        + str(bat_val)
+        + ".png"
     )
     if __debug:
-        print("calling display function: " + dispCmd)
+        print("calling display function: " + disp_cmd)
     else:
-        os.system(dispCmd)
+        os.system(disp_cmd)
 
 
-def formatKey(deviceId):
+def format_id(device_id):
     """Use MAC address as ID. Capture numbers."""
-    numbers = re.findall("[0-9]+", deviceId)
+    numbers = re.findall("[0-9]+", device_id)
     return "".join(numbers)
 
 
-def getCurrDevices(devicePath):
+def get_curr_devices(device_path):
     """Returns list of all sony controllers."""
-    return [d for d in os.listdir(devicePath) if "sony" in d.lower()]
+    return [d for d in os.listdir(device_path) if "sony" in d.lower()]
 
 
-def getIdAndVal(device):
-    batteryFile = f"{DEVICE_PATH}/{device}/capacity"
-    with open(batteryFile) as bf:
+def get_id_and_val(device):
+    battery_file = f"{DEVICE_PATH}/{device}/capacity"
+    with open(battery_file) as bf:
         # (25,50,75,100)
-        batStr = bf.readline().strip()
-        batVal = int(batStr) // 25 if batStr.isdigit() else 0
-        deviceId = formatKey(device)
-        return (deviceId, batVal)
+        bat_str = bf.readline().strip()
+        bat_val = int(bat_str) // 25 if bat_str.isdigit() else 0
+        device_id = format_id(device)
+        return (device_id, bat_val)
 
 
 def main():
@@ -66,26 +73,26 @@ def main():
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
 
     while True:
-        currDevices = getCurrDevices(DEVICE_PATH)
+        curr_devices = get_curr_devices(DEVICE_PATH)
         if __debug:
-            print(f"\nBEFORE: KNOWN DEVICES: {knownDevices}")
+            print(f"\nBEFORE: KNOWN DEVICES: {known_devices}")
 
-        if len(currDevices) > len(knownDevices):
+        if len(curr_devices) > len(known_devices):
             # Detected new controller
-            for d in currDevices:
-                deviceId, batVal = getIdAndVal(d)
-                if deviceId not in knownDevices:
-                    knownDevices[deviceId] = batVal
-                    callDisplayFunc(batVal)
-        elif len(currDevices) < len(knownDevices):
+            for d in curr_devices:
+                device_id, bat_val = get_id_and_val(d)
+                if device_id not in known_devices:
+                    known_devices[device_id] = bat_val
+                    call_display_func(bat_val)
+        elif len(curr_devices) < len(known_devices):
             # Controller disconnected
-            knownDevices.clear()
-            for d in currDevices:
-                deviceId, batVal = getIdAndVal(d)
-                knownDevices[deviceId] = batVal
+            known_devices.clear()
+            for d in curr_devices:
+                device_id, bat_val = get_id_and_val(d)
+                known_devices[device_id] = bat_val
 
         if __debug:
-            print(f"AFTER: KNOWN DEVICES: {knownDevices}")
+            print(f"AFTER: KNOWN DEVICES: {known_devices}")
             break
 
         time.sleep(2)
