@@ -7,6 +7,9 @@ import sys
 # Path where controller info exists
 DEVICE_PATH = "/sys/class/power_supply"
 
+# Time in seconds between device checks
+TIMEOUT_INTERVAL = 2
+
 # Get current directory. Icons and check log are stored relative to this python file
 curr_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
@@ -31,15 +34,7 @@ known_devices = {
 
 def call_display_func(bat_val):
     """Use to call the battery display func."""
-    disp_cmd = (
-        disp_exec_path
-        + " "
-        + disp_cmd_options
-        + " "
-        + icon_path
-        + str(bat_val)
-        + ".png"
-    )
+    disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_path + str(bat_val).png}"
     if __debug:
         print("calling display function: " + disp_cmd)
     else:
@@ -95,7 +90,7 @@ def main():
             print(f"AFTER: KNOWN DEVICES: {known_devices}")
             break
 
-        time.sleep(2)
+        time.sleep(TIMEOUT_INTERVAL)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+cat /proc/bus/input/devices
+
+I: Bus=0005 Vendor=054c Product=0268 Version=8000
+N: Name="Sony PLAYSTATION(R)3 Controller"
+P: Phys=dc:a6:32:1c:0c:ed
+S: Sysfs=/devices/platform/soc/fe201000.serial/tty/ttyAMA0/hci0/hci0:12/0005:054C:0268.000A/input/input18
+U: Uniq=00:24:33:36:d1:33
+H: Handlers=event5 js0 
+B: PROP=0
+B: EV=20001b
+B: KEY=f 0 0 0 0 0 0 0 7fdb0000 0 0 0 0 0 0 0 0 0
+B: ABS=3f
+B: MSC=10
+B: FF=1 7030000 0 0
