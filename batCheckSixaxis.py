@@ -32,7 +32,7 @@ known_devices = {
 }
 
 
-def call_display_func(bat_val):
+def call_display_func(bat_val: int) -> None:
     """Use to call the battery display func."""
     disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_path + str(bat_val).png}"
     if __debug:
@@ -41,18 +41,18 @@ def call_display_func(bat_val):
         os.system(disp_cmd)
 
 
-def format_id(device_id):
+def format_id(device_id: str) -> str:
     """Use MAC address as ID. Capture numbers."""
     numbers = re.findall("[0-9]+", device_id)
     return "".join(numbers)
 
 
-def get_curr_devices(device_path):
+def get_curr_devices(device_path: str) -> list:
     """Returns list of all sony controllers."""
     return [d for d in os.listdir(device_path) if "sony" in d.lower()]
 
 
-def get_id_and_val(device):
+def get_id_and_val(device: str) -> tuple:
     battery_file = f"{DEVICE_PATH}/{device}/capacity"
     with open(battery_file) as bf:
         # (25,50,75,100)
@@ -62,7 +62,7 @@ def get_id_and_val(device):
         return (device_id, bat_val)
 
 
-def main():
+def main() -> None:
     """Watches for changes in device path and runs functions depeneding on change."""
     if not os.path.exists(DEVICE_PATH):
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
