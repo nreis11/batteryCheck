@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, mock_open
 from batCheckSixaxis import (
-    format_id,
+    get_device_id,
     get_curr_devices,
     get_id_and_val,
     call_display_func,
@@ -28,7 +28,7 @@ class TestBatCheckSixaxis(unittest.TestCase):
 
     def test_format_id(self):
         device_id = "00:21:4f:13:09:52"
-        formatted_id = format_id(device_id)
+        formatted_id = get_device_id(device_id)
         self.assertEqual(formatted_id, "00214130952")
 
     @patch("builtins.open", new_callable=mock_open, read_data="75\n")

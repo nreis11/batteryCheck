@@ -25,12 +25,6 @@ icon_path = curr_dir + "/icons/bat"
 # Debugging enable/disable
 __debug = False
 
-# Connected devices
-known_devices = {
-    # [device]: [bat_val]
-    # "sony_controller_battery_00:21:4f:13:09:52" : 3
-}
-
 
 def get_curr_devices(device_path: str) -> list[str]:
     """Returns list of all sony controllers."""
@@ -38,25 +32,31 @@ def get_curr_devices(device_path: str) -> list[str]:
 
 
 def call_display_func(bat_val: int) -> None:
-    """Use to call the battery display func."""
-    disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_path + str(bat_val)}.png"
+    """Calls the battery display function with a constructed command."""
+    icon_file = os.path.join(icon_path, f"{bat_val}.png")
+    disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_file}"
     if __debug:
-        print("calling display function: " + disp_cmd)
+        print(f"Calling display function: {disp_cmd}")
     else:
         os.system(disp_cmd)
 
 
-def get_bat_val(device: str) -> int:
-    battery_file = f"{DEVICE_PATH}/{device}/capacity"
-    with open(battery_file) as bf:
-        # (25,50,75,100)
-        bat_str = bf.readline().strip()
-        bat_val = int(bat_str) // 25 if bat_str.isdigit() else 0
-        return bat_val
+def get_battery_val(device: str) -> int:
+    try:
+        with open(os.path.join(DEVICE_PATH, device, "capacity")) as bf:
+            # Enumerated values should be 25, 50, 75, 100
+            return int(bf.readline().strip()) // 25
+    except (ValueError, FileNotFoundError):
+        return 0
 
 
 def main() -> None:
     """Watches for new devices in device path and runs display func if new device is found"""
+    known_devices = {
+        # [device]: [bat_val]
+        # "sony_controller_battery_00:21:4f:13:09:52" : 3
+    }
+
     if not os.path.exists(DEVICE_PATH):
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
 
@@ -68,9 +68,9 @@ def main() -> None:
         for device in curr_devices:
             # Only display battery info if new device is detected
             if device not in known_devices:
-                bat_val = get_bat_val(device)
-                known_devices[device] = bat_val
-                call_display_func(bat_val)
+                batt_val = get_battery_val(device)
+                known_devices[device] = batt_val
+                call_display_func(batt_val)
 
         if __debug:
             print(f"AFTER: KNOWN DEVICES: {known_devices}")
@@ -80,6 +80,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Terminating script...")
+        sys.exit(0)
 else:
     __debug = True
