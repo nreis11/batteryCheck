@@ -2,6 +2,8 @@
 import os
 import time
 import sys
+from inotify_simple import INotify, flags
+
 
 # Path where controller info exists
 DEVICE_PATH = "/sys/class/power_supply"
@@ -51,31 +53,39 @@ def get_battery_val(device: str) -> int:
 
 
 def main() -> None:
-    """Watches for new devices in device path and runs display func if new device is found"""
-    known_devices = {
+    """Monitors the power supply directory for changes."""
+    if not os.path.exists(DEVICE_PATH):
+        raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
+    connected_devices = {
         # [device]: [bat_val]
         # "sony_controller_battery_00:21:4f:13:09:52" : 3
     }
+    # Set up inotify to monitor the device path for changes
+    inotify = INotify()
+    watch_flags = flags.CREATE | flags.DELETE
+    wd = inotify.add_watch(DEVICE_PATH, watch_flags)
 
-    if not os.path.exists(DEVICE_PATH):
-        raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
+    print("Monitoring for new devices...")
 
     while True:
-        if __debug:
-            print(f"\nBEFORE: KNOWN DEVICES: {known_devices}")
+        for event in inotify.read():  # Block until an event occurs
+            for flag in flags.from_mask(event.mask):
+                device = event.name  # Get the file or directory name
+                if "sony" in device.lower():
+                    if flag == flags.CREATE and device not in connected_devices:
+                        # A new device was added
+                        bat_val = get_battery_val(device)
+                        connected_devices[device] = bat_val
+                        print(
+                            f"New device detected: {device}, battery level: {bat_val}"
+                        )
+                        call_display_func(bat_val)
+                    elif flag == flags.DELETE and device in connected_devices:
+                        # A device was removed
+                        print(f"Device removed: {device}")
+                        del connected_devices[device]
 
-        curr_devices = get_curr_devices(DEVICE_PATH)
-        for device in curr_devices:
-            # Only display battery info if new device is detected
-            if device not in known_devices:
-                batt_val = get_battery_val(device)
-                known_devices[device] = batt_val
-                call_display_func(batt_val)
-
-        if __debug:
-            print(f"AFTER: KNOWN DEVICES: {known_devices}")
-            break
-
+        # Sleep as a fallback in case no events are detected
         time.sleep(TIMEOUT_INTERVAL)
 
 
