@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import re
 import time
 import sys
 
@@ -28,8 +27,14 @@ __debug = False
 
 # Connected devices
 known_devices = {
-    # "00214130952" : 3
+    # [device]: [bat_val]
+    # "sony_controller_battery_00:21:4f:13:09:52" : 3
 }
+
+
+def get_curr_devices(device_path: str) -> list[str]:
+    """Returns list of all sony controllers."""
+    return [d for d in os.listdir(device_path) if "sony" in d.lower()]
 
 
 def call_display_func(bat_val: int) -> None:
@@ -41,25 +46,13 @@ def call_display_func(bat_val: int) -> None:
         os.system(disp_cmd)
 
 
-def format_id(device_id: str) -> str:
-    """Use MAC address as ID. Capture numbers."""
-    numbers = re.findall("[0-9]+", device_id)
-    return "".join(numbers)
-
-
-def get_curr_devices(device_path: str) -> list[str]:
-    """Returns list of all sony controllers."""
-    return [d for d in os.listdir(device_path) if "sony" in d.lower()]
-
-
-def get_id_and_val(device: str) -> tuple:
+def get_bat_val(device: str) -> int:
     battery_file = f"{DEVICE_PATH}/{device}/capacity"
     with open(battery_file) as bf:
         # (25,50,75,100)
         bat_str = bf.readline().strip()
         bat_val = int(bat_str) // 25 if bat_str.isdigit() else 0
-        device_id = format_id(device)
-        return (device_id, bat_val)
+        return bat_val
 
 
 def main() -> None:
@@ -68,14 +61,15 @@ def main() -> None:
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
 
     while True:
-        curr_devices = get_curr_devices(DEVICE_PATH)
         if __debug:
             print(f"\nBEFORE: KNOWN DEVICES: {known_devices}")
 
+        curr_devices = get_curr_devices(DEVICE_PATH)
         for device in curr_devices:
+            # Only display battery info if new device is detected
             if device not in known_devices:
-                device_id, bat_val = get_id_and_val(device)
-                known_devices[device_id] = bat_val
+                bat_val = get_bat_val(device)
+                known_devices[device] = bat_val
                 call_display_func(bat_val)
 
         if __debug:
