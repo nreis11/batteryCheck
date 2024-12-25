@@ -34,7 +34,7 @@ known_devices = {
 
 def call_display_func(bat_val: int) -> None:
     """Use to call the battery display func."""
-    disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_path + str(bat_val).png}"
+    disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_path + str(bat_val)}.png"
     if __debug:
         print("calling display function: " + disp_cmd)
     else:
@@ -47,7 +47,7 @@ def format_id(device_id: str) -> str:
     return "".join(numbers)
 
 
-def get_curr_devices(device_path: str) -> list:
+def get_curr_devices(device_path: str) -> list[str]:
     """Returns list of all sony controllers."""
     return [d for d in os.listdir(device_path) if "sony" in d.lower()]
 
@@ -63,7 +63,7 @@ def get_id_and_val(device: str) -> tuple:
 
 
 def main() -> None:
-    """Watches for changes in device path and runs functions depeneding on change."""
+    """Watches for new devices in device path and runs display func if new device is found"""
     if not os.path.exists(DEVICE_PATH):
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
 
@@ -72,19 +72,11 @@ def main() -> None:
         if __debug:
             print(f"\nBEFORE: KNOWN DEVICES: {known_devices}")
 
-        if len(curr_devices) > len(known_devices):
-            # Detected new controller
-            for d in curr_devices:
-                device_id, bat_val = get_id_and_val(d)
-                if device_id not in known_devices:
-                    known_devices[device_id] = bat_val
-                    call_display_func(bat_val)
-        elif len(curr_devices) < len(known_devices):
-            # Controller disconnected
-            known_devices.clear()
-            for d in curr_devices:
-                device_id, bat_val = get_id_and_val(d)
+        for device in curr_devices:
+            if device not in known_devices:
+                device_id, bat_val = get_id_and_val(device)
                 known_devices[device_id] = bat_val
+                call_display_func(bat_val)
 
         if __debug:
             print(f"AFTER: KNOWN DEVICES: {known_devices}")
