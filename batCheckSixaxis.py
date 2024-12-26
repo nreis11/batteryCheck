@@ -2,6 +2,7 @@
 import os
 import time
 import sys
+import logging
 from inotify_simple import INotify, flags
 
 
@@ -10,16 +11,22 @@ DEVICE_PATH = "/sys/class/power_supply"
 
 # Time in seconds between device checks
 TIMEOUT_INTERVAL = 2
+# Toggle battery info logging
+BAT_LOG_ENABLE = 0
 
 # Get current directory. Icons and check log are stored relative to this python file
 curr_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
+if BAT_LOG_ENABLE:
+    logging.basicConfig(
+        filename=os.path.join(curr_dir, "batteryCheckLog.temp"),
+        level=logging.INFO,
+        format="%(asctime)s - %(message)s",
+    )
+
 disp_exec_path = os.path.join(curr_dir, "/code/batDisplay")
 disp_cmd_options = "-x 24 -y 16 -t 5"  # Can change '-x 32 -y 32 -s 32 -t 3'
 
-# Path for logging battery checks. Logging will be enabled if this file exists
-bat_log = os.path.join(curr_dir, "/batteryCheckLog.temp")
-bat_log_enable = 0
 
 # Path for battery icons
 icon_path = os.path.join(curr_dir, "/icons")
@@ -52,7 +59,7 @@ def main() -> None:
     if not os.path.exists(DEVICE_PATH):
         raise FileNotFoundError(f"Device directory {DEVICE_PATH} not found. Halting.")
     connected_devices = {
-        # [device]: [bat_val]
+        # <device>: <bat_val>
         # "sony_controller_battery_00:21:4f:13:09:52" : 3
     }
     # Set up inotify to monitor the device path for changes
@@ -71,14 +78,18 @@ def main() -> None:
                         # A new device was added
                         bat_val = get_battery_val(device)
                         connected_devices[device] = bat_val
-                        print(
-                            f"New device detected: {device}, battery level: {bat_val}"
-                        )
                         call_display_func(bat_val)
+                        if BAT_LOG_ENABLE:
+                            logging.info(
+                                f"Detected new device: {device} with battery {bat_val}"
+                            )
                     elif flag == flags.DELETE and device in connected_devices:
                         # A device was removed
-                        print(f"Device removed: {device}")
                         del connected_devices[device]
+                        if BAT_LOG_ENABLE:
+                            logging.info(
+                                f"Removed device: {device} with battery {bat_val}"
+                            )
 
         # Sleep as a fallback in case no events are detected
         time.sleep(TIMEOUT_INTERVAL)
