@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import time
 import sys
 import logging
 from inotify_simple import INotify, flags
@@ -10,7 +9,7 @@ from inotify_simple import INotify, flags
 DEVICE_PATH = "/sys/class/power_supply"
 
 # Time in seconds between device checks
-TIMEOUT_INTERVAL = 2
+# TIMEOUT_INTERVAL = 2
 # Toggle battery info logging
 BAT_LOG_ENABLE = 0
 
@@ -24,12 +23,11 @@ if BAT_LOG_ENABLE:
         format="%(asctime)s - %(message)s",
     )
 
-disp_exec_path = os.path.join(curr_dir, "/code/batDisplay")
+disp_exec_path = os.path.join(curr_dir, "code/batDisplay")
 disp_cmd_options = "-x 24 -y 16 -t 5"  # Can change '-x 32 -y 32 -s 32 -t 3'
 
-
 # Path for battery icons
-icon_path = os.path.join(curr_dir, "/icons")
+icon_path = os.path.join(curr_dir, "icons")
 
 # Debugging enable/disable
 __debug = False
@@ -45,10 +43,10 @@ def call_display_func(bat_val: int) -> None:
         os.system(disp_cmd)
 
 
-def get_battery_val(device: str) -> int:
+def get_bat_val(device: str) -> int:
+    """Reads and returns battery value as an integer."""
     try:
         with open(os.path.join(DEVICE_PATH, device, "capacity")) as bf:
-            # Enumerated values should be 25, 50, 75, 100
             return int(bf.readline().strip()) // 25
     except (ValueError, FileNotFoundError):
         return 0
@@ -76,7 +74,7 @@ def main() -> None:
                 if "sony" in device.lower():
                     if flag == flags.CREATE and device not in connected_devices:
                         # A new device was added
-                        bat_val = get_battery_val(device)
+                        bat_val = get_bat_val(device)
                         connected_devices[device] = bat_val
                         call_display_func(bat_val)
                         if BAT_LOG_ENABLE:
@@ -87,15 +85,12 @@ def main() -> None:
                         # A device was removed
                         del connected_devices[device]
                         if BAT_LOG_ENABLE:
-                            logging.info(
-                                f"Removed device: {device} with battery {bat_val}"
-                            )
-
-        # Sleep as a fallback in case no events are detected
-        time.sleep(TIMEOUT_INTERVAL)
+                            logging.info(f"Removed device: {device}")
 
 
 if __name__ == "__main__":
+    if os.name != "posix":
+        raise EnvironmentError("This script can only run on Linux.")
     try:
         main()
     except KeyboardInterrupt:
