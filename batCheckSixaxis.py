@@ -14,28 +14,23 @@ TIMEOUT_INTERVAL = 2
 # Get current directory. Icons and check log are stored relative to this python file
 curr_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-disp_exec_path = curr_dir + "/code/batDisplay"
+disp_exec_path = os.path.join(curr_dir, "/code/batDisplay")
 disp_cmd_options = "-x 24 -y 16 -t 5"  # Can change '-x 32 -y 32 -s 32 -t 3'
 
 # Path for logging battery checks. Logging will be enabled if this file exists
-bat_log = curr_dir + "/batteryCheckLog.temp"
+bat_log = os.path.join(curr_dir, "/batteryCheckLog.temp")
 bat_log_enable = 0
 
-# Path for battery icons (including the 'bat' part of batX.png file name for convenience)
-icon_path = curr_dir + "/icons/bat"
+# Path for battery icons
+icon_path = os.path.join(curr_dir, "/icons")
 
 # Debugging enable/disable
 __debug = False
 
 
-def get_curr_devices(device_path: str) -> list[str]:
-    """Returns list of all sony controllers."""
-    return [d for d in os.listdir(device_path) if "sony" in d.lower()]
-
-
 def call_display_func(bat_val: int) -> None:
     """Calls the battery display function with a constructed command."""
-    icon_file = os.path.join(icon_path, f"{bat_val}.png")
+    icon_file = os.path.join(icon_path, f"bat{bat_val}.png")
     disp_cmd = f"{disp_exec_path} {disp_cmd_options} {icon_file}"
     if __debug:
         print(f"Calling display function: {disp_cmd}")
@@ -63,7 +58,7 @@ def main() -> None:
     # Set up inotify to monitor the device path for changes
     inotify = INotify()
     watch_flags = flags.CREATE | flags.DELETE
-    wd = inotify.add_watch(DEVICE_PATH, watch_flags)
+    inotify.add_watch(DEVICE_PATH, watch_flags)
 
     print("Monitoring for new devices...")
 
